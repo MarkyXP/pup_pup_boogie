@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dance Pad Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            background: #1a1a1a;
+        }
+
+        .menu-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 0.5s;
+        }
+
+        .menu-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .menu-content {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .menu-title {
+            font-size: 32px;
+            font-weight: bold;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .menu-section {
+            margin-bottom: 25px;
+        }
+
+        .menu-section h3 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            color: #555;
+        }
+
+        .speed-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .speed-option {
+            padding: 12px 20px;
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 16px;
+        }
+
+        .speed-option:hover {
+            background: #e0e0e0;
+            transform: translateY(-2px);
+        }
+
+        .speed-option.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .menu-button {
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 10px;
+        }
+
+        .random-button {
+            background: #f39c12;
+            color: white;
+        }
+
+        .random-button:hover {
+            background: #e67e22;
+            transform: scale(1.05);
+        }
+
+        .start-button {
+            background: #27ae60;
+            color: white;
+        }
+
+        .start-button:hover {
+            background: #229954;
+            transform: scale(1.05);
+        }
+
+        .song-list {
+            margin-bottom: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        .song-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 1px solid #eee;
+            text-align: left;
+        }
+
+        .song-item:last-child {
+            border-bottom: none;
+        }
+
+        .song-item:hover {
+            background: #f0f0f0;
+        }
+
+        .song-item.selected {
+            background: #667eea;
+            color: white;
+        }
+
+        .song-thumbnail {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 6px;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+
+        .song-details {
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .song-name {
+            font-weight: bold;
+            font-size: 16px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .loading-songs {
+            padding: 20px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            position: relative;
+        }
+
+        .square {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .square.active {
+            animation: pulse 0.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            from {
+                transform: scale(1);
+                opacity: 1;
+            }
+            to {
+                transform: scale(0.98);
+                opacity: 0.9;
+            }
+        }
+
+        .square.black {
+            background-color: #1a1a1a !important;
+        }
+
+        #red { background-color: #e74c3c; }
+        #green { background-color: #2ecc71; }
+        #blue { background-color: #3498db; }
+        #yellow { background-color: #f1c40f; }
+
+        .center-overlay {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .countdown {
+            font-size: 120px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            animation: countdownPulse 1s ease-in-out;
+        }
+
+        @keyframes countdownPulse {
+            0% {
+                transform: scale(0.5);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.2);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .start-game-button {
+            padding: 20px 40px;
+            font-size: 24px;
+            font-weight: bold;
+            background: white;
+            border: 4px solid #333;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s;
+        }
+
+        .start-game-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid #333;
+            border-radius: 8px;
+            cursor: pointer;
+            z-index: 50;
+            transition: all 0.3s;
+        }
+
+        .back-button:hover {
+            background: white;
+            transform: scale(1.05);
+        }
+
+        .song-info {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 50;
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 24px;
+            z-index: 200;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 30px 50px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="menu-screen" id="menuScreen">
+        <div class="menu-content">
+            <div class="menu-title">Dance Pad Game</div>
+            
+            <div class="menu-section">
+                <h3>Select a Song</h3>
+                <div class="song-list" id="songList">
+                    <div class="loading-songs">Loading songs...</div>
+                </div>
+                <button class="menu-button random-button" id="shuffleSongButton">Shuffle Song</button>
+            </div>
+
+            <div class="menu-section">
+                <h3>Speed</h3>
+                <div class="speed-options">
+                    <div class="speed-option" data-speed="manual">Manual (Tap to Progress)</div>
+                    <div class="speed-option selected" data-speed="slow">Slow Auto (3s)</div>
+                    <div class="speed-option" data-speed="medium">Medium Auto (2s)</div>
+                    <div class="speed-option" data-speed="fast">Fast Auto (1s)</div>
+                </div>
+            </div>
+
+            <div class="menu-section">
+                <button class="menu-button random-button" id="shuffleButton">Shuffle Squares</button>
+            </div>
+
+            <button class="menu-button start-button" id="menuStartButton">Start Game</button>
+        </div>
+    </div>
+
+    <div class="game-container" style="display: none;" id="gameContainer">
+        <div class="square" id="red"></div>
+        <div class="square" id="green"></div>
+        <div class="square" id="blue"></div>
+        <div class="square" id="yellow"></div>
+
+        <div class="center-overlay" id="centerOverlay">
+            <button class="start-game-button" id="startButton">START</button>
+        </div>
+
+        <button class="back-button" id="backButton">Back to Menu</button>
+        <div class="song-info" id="songInfo" style="display: none;"></div>
+    </div>
+
+    <audio id="gameAudio"></audio>
+
+    <script>
+        // Configuration
+        const ENDPOINT_URL = '/api/song'; // Replace with your actual endpoint
+        
+        let currentSpeed = 'slow';
+        let songList = [];
+        let selectedSong = null;
+        let gameRunning = false;
+        let manualMode = false;
+        let progressInterval = null;
+        let audioElement = document.getElementById('gameAudio');
+        let elapsedTime = 0;
+        let startTime = 0;
+
+        const squares = {
+            red: document.getElementById('red'),
+            green: document.getElementById('green'),
+            blue: document.getElementById('blue'),
+            yellow: document.getElementById('yellow')
+        };
+
+        const speedSettings = {
+            manual: 0,
+            slow: 3000,
+            medium: 2000,
+            fast: 1000
+        };
+
+        // Menu functionality
+        document.querySelectorAll('.speed-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.speed-option').forEach(opt => opt.classList.remove('selected'));
+                this.classList.add('selected');
+                currentSpeed = this.dataset.speed;
+                manualMode = currentSpeed === 'manual';
+            });
+        });
+
+        document.getElementById('shuffleSongButton').addEventListener('click', function() {
+            shuffleRandomSong();
+        });
+
+        document.getElementById('shuffleButton').addEventListener('click', function() {
+            shuffleSquares();
+        });
+
+        document.getElementById('menuStartButton').addEventListener('click', function() {
+            if (!selectedSong) {
+                alert('Please select a song first!');
+                return;
+            }
+            document.getElementById('menuScreen').classList.add('hidden');
+            document.getElementById('gameContainer').style.display = 'grid';
+            setTimeout(() => {
+                document.getElementById('menuScreen').style.display = 'none';
+            }, 500);
+        });
+
+        document.getElementById('backButton').addEventListener('click', function() {
+            stopGame();
+            document.getElementById('menuScreen').style.display = 'flex';
+            document.getElementById('menuScreen').classList.remove('hidden');
+            document.getElementById('gameContainer').style.display = 'none';
+        });
+
+        // Shuffle square positions
+        function shuffleSquares() {
+            const colors = ['#e74c3c', '#2ecc71', '#3498db', '#f1c40f']; // red, green, blue, yellow
+            const squareElements = [squares.red, squares.green, squares.blue, squares.yellow];
+            
+            // Fisher-Yates shuffle
+            for (let i = colors.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [colors[i], colors[j]] = [colors[j], colors[i]];
+            }
+            
+            // Apply shuffled colors
+            squareElements.forEach((square, index) => {
+                square.style.backgroundColor = colors[index];
+            });
+            
+            alert('Squares shuffled!');
+        }
+
+        // Fetch song list from endpoint
+        async function fetchSongList() {
+            const songListContainer = document.getElementById('songList');
+            songListContainer.innerHTML = '<div class="loading-songs">Loading songs...</div>';
+            
+            try {
+                const response = await fetch(ENDPOINT_URL);
+                const data = await response.json();
+                
+                // Handle different response formats
+                songList = data.songs || data.songList || data;
+                
+                if (!Array.isArray(songList) || songList.length === 0) {
+                    throw new Error('No songs in response');
+                }
+                
+                displaySongList();
+            } catch (error) {
+                console.error('Error fetching songs:', error);
+                // Use demo songs for testing
+                songList = [
+                    {
+                        name: 'Demo Song 1',
+                        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+                        thumbnail: 'https://via.placeholder.com/60/e74c3c/ffffff?text=Song+1',
+                        duration: 180
+                    },
+                    {
+                        name: 'Demo Song 2',
+                        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+                        thumbnail: 'https://via.placeholder.com/60/2ecc71/ffffff?text=Song+2',
+                        duration: 200
+                    },
+                    {
+                        name: 'Demo Song 3',
+                        url: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+                        thumbnail: 'https://via.placeholder.com/60/3498db/ffffff?text=Song+3',
+                        duration: 190
+                    }
+                ];
+                displaySongList();
+            }
+        }
+
+        // Display song list in the menu
+        function displaySongList() {
+            const songListContainer = document.getElementById('songList');
+            songListContainer.innerHTML = '';
+            
+            songList.forEach((song, index) => {
+                const songItem = document.createElement('div');
+                songItem.className = 'song-item';
+                songItem.dataset.index = index;
+                
+                const thumbnail = document.createElement('img');
+                thumbnail.className = 'song-thumbnail';
+                thumbnail.src = song.thumbnail || song.thumbnailUrl || 'https://via.placeholder.com/60/cccccc/ffffff?text=Song';
+                thumbnail.alt = song.name || 'Song thumbnail';
+                
+                const details = document.createElement('div');
+                details.className = 'song-details';
+                
+                const name = document.createElement('div');
+                name.className = 'song-name';
+                name.textContent = song.name || song.title || `Song ${index + 1}`;
+                
+                details.appendChild(name);
+                songItem.appendChild(thumbnail);
+                songItem.appendChild(details);
+                
+                songItem.addEventListener('click', function() {
+                    selectSong(index);
+                });
+                
+                songListContainer.appendChild(songItem);
+            });
+        }
+
+        // Select a song from the list
+        function selectSong(index) {
+            selectedSong = songList[index];
+            
+            // Update UI
+            document.querySelectorAll('.song-item').forEach((item, i) => {
+                if (i === index) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+
+        // Shuffle and select a random song
+        function shuffleRandomSong() {
+            if (songList.length === 0) {
+                alert('No songs available to shuffle!');
+                return;
+            }
+            
+            const randomIndex = Math.floor(Math.random() * songList.length);
+            selectSong(randomIndex);
+        }
+
+        // Fetch song from endpoint
+        // Start button functionality
+        document.getElementById('startButton').addEventListener('click', async function() {
+            startCountdown();
+        });
+
+        // Countdown
+        function startCountdown() {
+            const overlay = document.getElementById('centerOverlay');
+            let count = 3;
+            
+            overlay.innerHTML = `<div class="countdown">${count}</div>`;
+            
+            const countdownInterval = setInterval(() => {
+                count--;
+                if (count > 0) {
+                    overlay.innerHTML = `<div class="countdown">${count}</div>`;
+                } else {
+                    clearInterval(countdownInterval);
+                    overlay.style.display = 'none';
+                    startGame();
+                }
+            }, 1000);
+        }
+
+        // Start the game
+        function startGame() {
+            gameRunning = true;
+            startTime = Date.now();
+            
+            // Load and play audio from selected song
+            if (selectedSong && selectedSong.url) {
+                audioElement.src = selectedSong.url;
+                audioElement.play().catch(err => console.error('Audio play error:', err));
+                
+                document.getElementById('songInfo').style.display = 'block';
+                document.getElementById('songInfo').textContent = `Now Playing: ${selectedSong.name || 'Song'}`;
+                updateSongInfo();
+            }
+
+            // Start the square progression
+            showNextSquares();
+
+            if (!manualMode) {
+                progressInterval = setInterval(() => {
+                    showNextSquares();
+                }, speedSettings[currentSpeed]);
+            }
+
+            // Stop when audio ends
+            audioElement.addEventListener('ended', stopGame);
+            
+            // Also stop based on duration if provided
+            if (selectedSong.duration) {
+                setTimeout(stopGame, selectedSong.duration * 1000);
+            }
+        }
+
+        // Show next square(s)
+        function showNextSquares() {
+            if (!gameRunning) return;
+
+            const squareKeys = Object.keys(squares);
+            const now = (Date.now() - startTime) / 1000;
+            const songDuration = selectedSong?.duration || audioElement.duration || 180;
+            
+            // Determine number of active squares (1 at start, up to 2 later)
+            const numActive = now > songDuration * 0.3 ? Math.floor(Math.random() * 2) + 1 : 1;
+            
+            // Reset all squares
+            squareKeys.forEach(key => {
+                squares[key].classList.remove('active');
+                squares[key].classList.add('black');
+            });
+
+            // Activate random square(s)
+            const shuffled = [...squareKeys].sort(() => Math.random() - 0.5);
+            for (let i = 0; i < numActive && i < shuffled.length; i++) {
+                squares[shuffled[i]].classList.remove('black');
+                squares[shuffled[i]].classList.add('active');
+            }
+        }
+
+        // Manual progression
+        document.querySelectorAll('.square').forEach(square => {
+            square.addEventListener('click', () => {
+                if (gameRunning && manualMode) {
+                    showNextSquares();
+                }
+            });
+        });
+
+        // Update song info
+        function updateSongInfo() {
+            if (!gameRunning) return;
+            
+            const elapsed = Math.floor(audioElement.currentTime);
+            const duration = selectedSong?.duration || Math.floor(audioElement.duration) || 0;
+            const remaining = duration - elapsed;
+            
+            if (duration > 0) {
+                document.getElementById('songInfo').textContent = `${selectedSong?.name || 'Playing'} - ${elapsed}s / ${duration}s (${remaining}s remaining)`;
+            } else {
+                document.getElementById('songInfo').textContent = `${selectedSong?.name || 'Playing'} - ${elapsed}s`;
+            }
+            
+            if (gameRunning) {
+                requestAnimationFrame(updateSongInfo);
+            }
+        }
+
+        // Stop game
+        function stopGame() {
+            gameRunning = false;
+            
+            if (progressInterval) {
+                clearInterval(progressInterval);
+                progressInterval = null;
+            }
+            
+            audioElement.pause();
+            audioElement.currentTime = 0;
+            
+            // Reset squares
+            Object.keys(squares).forEach(key => {
+                squares[key].classList.remove('active', 'black');
+            });
+            
+            // Reset overlay
+            const overlay = document.getElementById('centerOverlay');
+            overlay.style.display = 'flex';
+            overlay.innerHTML = '<button class="start-game-button" id="startButton">START</button>';
+            document.getElementById('startButton').addEventListener('click', async function() {
+                startCountdown();
+            });
+            
+            document.getElementById('songInfo').style.display = 'none';
+        }
+
+        // Initialize by fetching song list
+        fetchSongList();
+    </script>
+</body>
+</html>
