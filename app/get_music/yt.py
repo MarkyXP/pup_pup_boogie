@@ -9,7 +9,7 @@ def download_audio(url):
         'outtmpl': 'audio/%(title)s|%(duration)s/audio.%(ext)s', # Output file name template
         'noplaylist': True,         # Only download single video
         'progress_hooks': [my_progress_hook],
-        'force_ipv4': True,
+        'force_ipv4': True
     }
     print("\nStarting audio download...")
     with yt_dlp.YoutubeDL(audio_opts) as ydl:

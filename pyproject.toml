@@ -9,3 +9,8 @@ dependencies = [
     "uvicorn>=0.40.0",
     "yt-dlp>=2026.2.4",
 ]
+
+[dependency-groups]
+dev = [
+    "rich>=14.3.2",
+]
